@@ -1,0 +1,150 @@
+# In this exercise, you'll work with one of the most popular starter data sets in data science, the Titanic data set. 
+# This is a data set that records various attributes of passengers on the Titanic, including who survived and who didn’t.
+
+# Getting started
+# Read the description of the data set on the Kaggle website.Download the data as an excel file here. (https://www.kaggle.com/c/titanic/data)
+
+# Exercise
+# Using R, you’ll be handling missing values in this data set, and creating a new data set. Specifically, these are the tasks you need to do:
+
+
+
+################
+### 0: Load the data in RStudio
+#Save the data set as a CSV file called titanic_original.csv and load it in RStudio into a data frame.
+
+#loads R package -> dplyr
+suppressMessages(library(dplyr))
+
+#loads csv file into R & saved as data frame & StringsAsFactors=FALSE flag to force all factor to be a character.
+titanicori <- data.frame(read.csv("titanic_original.csv", header = TRUE, stringsAsFactors=FALSE))
+
+#reads only 1309 rows of csv as automatic extra row is added at the bottom.
+titanicori <- titanicori[0:1309, 0:14]
+
+
+
+
+################
+## 1: Port of embarkation
+# The embarked column has one missing value, which is known to correspond to a passenger who actually embarked at Southampton. 
+# Find the missing value and replace it with S.
+
+
+#finds all missing value in that column and replace as NA
+titanicori$embarked[titanicori$embarked==""]<- NA 
+
+# to make sure our code works, finds which row has NA
+which(is.na(titanicori$embarked))
+
+# renames NA as 'S'
+titanicori$embarked[is.na(titanicori$embarked)] <- 'S'
+
+
+
+
+################
+## 2: Age
+# You’ll notice that a lot of the values in the Age column are missing. While there are many ways to fill these missing values, 
+# using the mean or median of the rest of the values is quite common in such cases.
+# Calculate the mean of the Age column and use that value to populate the missing values
+
+
+# running code to see how many rows has NA.
+length(which(is.na(titanicori$age)))
+
+# making sure any missing values are assigned as NA
+titanicori$embarked[titanicori$age==""]<- NA 
+
+# running code to see if there were missing value after the last operation
+length(which(is.na(titanicori$age)))
+
+#calculate mean of the age column while ignoring NA's
+mean(titanicori$age,na.rm = TRUE)
+
+#setting up all NA to be the value of the mean
+titanicori$age[is.na(titanicori$age)] <- 29.88113
+
+
+# Think about other ways you could have populated the missing values in the age column. Why would you pick any of those over the mean (or not)?
+
+range(titanicori$age)
+
+### ANS : By finding the range of age of passanger, there are from 0.167 to 80. Hence, median would be an alternative choice as the range 
+###       is not big and age distribution is quite even.
+
+
+
+
+################
+## 3: Lifeboat
+# You’re interested in looking at the distribution of passengers in different lifeboats, but as we know, many passengers did not make it to a boat :-( 
+# This means that there are a lot of missing values in the boat column. Fill these empty slots with a dummy value e.g. NA
+
+
+# making sure any missing values are assigned as NA
+titanicori$boat[titanicori$boat==""]<- NA 
+
+# running code to see how many rows has NA.
+length(which(is.na(titanicori$boat)))
+
+
+
+
+
+################
+## 4: Cabin
+# You notice that many passengers don’t have a cabin number associated with them. Does it make sense to fill missing cabin numbers with a value?
+# What does a missing value here mean?
+
+## Ans :  No, as the passenger class are separated into 3 different class, hence by allocating random values it will affect our final relationships
+##        studies which will produce a flawed report. The missing values means that the ship staff were not effective in their job as some passangers 
+##        managed to entered the ship illegally and they were not recorded.
+
+
+# You have a hunch that the fact that the cabin number is missing might be a useful indicator of survival.
+# Create a new column has_cabin_number which has 1 if there is a cabin number, and 0 otherwise.
+
+
+#saves 'cabin' column value in new variable
+cabinres <- titanicori$cabin;
+
+#assigns value to a new column variable
+has_cabin_number <- NULL
+
+#vector produces a vector of the given length and mode.
+has_cabin_number <- vector(mode="character", length=length(cabinres))
+
+
+#replaces value with digits with 1 & missing value with 0
+i <- 1;
+for(cabinn in cabinres)         ## cabinn is created for the purpose of this for loop
+{
+  ifelse(grepl("[[:digit:]]+", cabinn) , 
+         has_cabin_number[i] <- "1",
+         ifelse(grepl("", cabinn),
+                has_cabin_number[i] <- "0",
+                )
+         );
+  i <- i + 1;
+}
+
+## add column to the data set
+titanicori$has_cabin_number <-  has_cabin_number
+
+
+
+
+
+################
+## 6: Submit the project on Github
+# Include your code, the original data as a CSV file titanic_original.csv, 
+# and the cleaned up data as a CSV file called titanic_clean.csv.
+
+
+# making sure the titanicori is a data frame
+is.data.frame(titanicori)
+
+# writing a new csv file after titanicori
+write.csv(titanicori,file = "titanic_clean.csv" )
+
