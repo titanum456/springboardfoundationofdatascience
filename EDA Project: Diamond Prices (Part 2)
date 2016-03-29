@@ -1,0 +1,240 @@
+library(ggplot2)
+library(dplyr)
+library(plyr)
+
+data("diamonds")
+
+## Your first task is to create a scatterplot of price vs x. using the ggplot syntax.
+
+ggplot(aes(x=x,y=price),data = diamonds) +  geom_point()
+
+
+## What are your observations about the scatterplot of price vs x ?
+# Answer: The distribution of price is saturated across x = 4 to 9.
+
+
+
+## What is the correlation between price and x is 0.88 ? 
+
+cor.test(diamonds$price,diamonds$x)
+# the answer is 0.88
+
+## What is the correlation between price and y is 0.86
+
+cor.test(diamonds$price,diamonds$y)
+# the answer is 0.86
+
+## What is the correlation between price and z is 0.86
+
+cor.test(diamonds$price,diamonds$z)
+# the answer is 0.86
+
+
+
+## Create a simple scatter plot of price vs depth.
+ggplot(aes(x=depth,y=price),data = diamonds) +  geom_point()
+
+
+## Change the code to make the transparency of the points to be 1/100 of what they are now and mark
+## the x-axis every 2 units. See the instructor notes for two hints.
+
+summary(diamonds$depth)
+
+ggplot(aes(x=depth,y=price),data = diamonds) +  geom_point(alpha=1/100) + 
+  scale_x_continuous(breaks = seq(40,80,2))
+
+
+## Based on the scatterplot of depth vs price, most diamonds are between what values of depth?
+# Answer is 58 - 64
+
+
+
+## What is the correlation between depth vs price ?
+
+cor.test(diamonds$depth,diamonds$price)
+# the answer is -0.01
+
+
+
+## Based on the correlation coefficient, would you use depth to predict the price of a diamond? Why?
+
+# Answer is No, as the correlation is low hence the depth and price are not correlated with each other. 
+
+
+
+## Create a scatterplot of price vs carat and omit the top 1% of price and carat values.
+
+ggplot(aes(x = carat, y = price), data = diamonds) + geom_point() +
+  xlim(0, quantile(diamonds$carat,0.99)) +
+  ylim(0, quantile(diamonds$price,0.99))
+
+
+
+
+## Create a scatterplot of price vs. volume (x * y * z). This is a very rough approximation for a 
+## diamond's volume. Create a new variable for volume in the diamonds data frame. This will be useful in a later exercise.
+
+diamonds <- diamonds %>% mutate(volume = x * y * z)
+
+head(diamonds)
+
+ggplot(aes(x = volume, y = price), data = diamonds) + geom_point()
+
+
+
+## What are your observations from the price vs volume scatterplot?
+
+# Answer:  There are more diamonds of volume less than 800 m^3. 
+
+
+## Whats the correlation of price and volume? Exclude diamonds that have a volume of 
+## 0  or that are greater than or equal to 800?
+
+with(subset(diamonds, volume > 0 & volume <= 800), cor.test(price, volume))
+# The answer is 0.923.
+
+
+
+
+
+## Subset the data to exclude diamonds with a volume greater than or equal to 800. Also, exclude diamonds
+## with a volume of 0. Adjust the transparency of the points and add a linear model to the plot. (See the
+## Instructor Notes or look up the documentation of geom_smooth() for more details about smoothers.)
+## We encourage you to think about this next question and  to post your thoughts in the discussion section.
+## Do you think this would be a useful model to estimate the price of diamonds? Why or why not?
+
+ggplot(aes(x = volume, y = price), data = subset(diamonds,volume != 0 & volume < 800)) +
+  geom_point(alpha =.05) +
+  geom_smooth(method = 'lm')
+
+# Answer: A linear model would not be useful in estimating the price of diamonds because the pattern of data 
+# doesn't follow a linear line.
+
+
+
+## Use the function dplyr package to create a new data frame containing info on diamonds by clarity.
+## Name the data frame diamondsByClarity. The data frame should contain the following variables in this order.
+## (1) mean_price,(2) median_price,(3) min_price,(4) max_price,(5) n :where n is the number of diamonds in each level of clarity.
+
+# Note: If you used the count() function from the plyr package before this exercise. 
+# You need to run this command to unload the plyr package. 
+detach("package:plyr", unload=TRUE) 
+
+diamondsByClarity <- group_by(diamonds, clarity) %>%
+  summarise(mean_price = mean(price),
+            median_price = median(price) * 1.0, 
+            min_price = min(price), 
+            max_price = max(price), 
+            n = n() )
+
+
+
+## We’ve created summary data frames with the mean price by clarity and color. You can run the code in R to
+## verify what data is in the variables diamonds_mp_by_clarity and diamonds_mp_by_color.
+
+## Your task is to write additional code to create two bar plots on one output image using the grid.arrange() 
+## function from the package gridExtra.
+
+diamonds_by_clarity <- group_by(diamonds, clarity)
+diamonds_mp_by_clarity <- summarise(diamonds_by_clarity, mean_price = mean(price))
+
+diamonds_by_color <- group_by(diamonds, color)
+diamonds_mp_by_color <- summarise(diamonds_by_color, mean_price = mean(price))
+
+# My answer:
+
+library(gridExtra)
+
+# If you want the heights of the bars to represent values in the data, use stat="identity" 
+# and map a value to the y aesthetic.
+
+p1 <- ggplot(aes(x = clarity, y = mean_price), data = subset(diamonds_mp_by_clarity)) +
+  geom_bar(stat = 'identity')
+
+p2 <- ggplot(aes(x = color ,y = mean_price), data = subset(diamonds_mp_by_color)) +
+  geom_bar(stat = 'identity')
+
+grid.arrange(p1,p2)
+
+## What do you notice in each of the bar charts for mean price by clarity and mean price by color?
+
+# The mean price for clarity "SI1" is the highest among all the clarity and the worst color,J has the highest mean price as
+# compared to the best color, D.
+
+
+
+## The Gapminder website contains over 500 data sets with information about the world's population. 
+## Your task is to continue the investigation you did at the end of Problem Set 3 or you can start fresh and choose a different
+## data set from Gapminder.
+## If you’re feeling adventurous or want to try some data munging see if you can find a data set or scrape one from the web.
+## In your investigation, examine pairs of variable and create 2-5 plots that make use of the techniques from Lesson 4.
+## You can find a link to the Gapminder website in the Instructor Notes.
+## Once you've completed your investigation, create a post in the discussions that includes:
+##  1. the variable(s) you investigated, your observations, and any summary statistics, 2. snippets of code that created the plots
+## 3. links to the images of your plots
+
+
+
+corruption <- read.csv("indicatorcpi.csv", header = TRUE, stringsAsFactors = FALSE)
+gdpcapita <- read.csv("GDPpercapita.csv", header = TRUE , stringsAsFactors = FALSE)
+
+
+# we will conduct research only on year 2008 for both datasets
+
+corruption$X2009 <- NULL
+corruption$X.1 <- NULL
+corruption$X.2 <- NULL
+corruption$X.3 <- NULL
+head(corruption)
+
+gdpcapita <- subset(gdpcapita, select = -c(X1960: X2007))
+gdpcapita <- subset(gdpcapita, select = -c(X2009 : X2011))
+head(gdpcapita)
+
+# Renaming first column to country
+
+names(corruption)[[1]] <- "Country"
+names(gdpcapita)[[1]] <- "Country"
+
+#joining data
+
+corruption_gdp <- inner_join(corruption, gdpcapita, by = "Country")
+names(corruption_gdp)[[2]] <- "Corruption_Index"
+names(corruption_gdp)[[3]] <- "GDP_capita"
+head(corruption_gdp)
+
+#cleaning out n/a's
+corruption_gdp <- filter(corruption_gdp, !is.na(corruption_gdp$Corruption_Index))
+corruption_gdp <- filter(corruption_gdp, !is.na(corruption_gdp$GDP_capita))
+
+# 1st graph is plotting the corruption index vs Gdp capita
+
+ggplot(data = corruption_gdp, aes(x = Corruption_Index, y = GDP_capita)) +
+  geom_point() +
+  geom_smooth(method = 'lm', color = 'red') +
+  scale_x_continuous(breaks = seq(0,10,1)) +
+  scale_y_continuous(breaks = seq(0,60000,10000)) +
+  labs(title = "Corruption Index vs. GDP per Capita in 2008",
+       x = "Corruption Index", 
+       y = "GDP per Capita") 
+
+# From my observation, it can be seen that countries with low corruption index to have the lowest GDP per capita
+
+
+# To plot 2nd graph, I wanted to figure out the overplotting of the data area. To do that, i figured out the median gdp per capita.
+
+median(corruption_gdp$GDP_capita, na.rm = TRUE) 
+# the median value is 2210
+
+ggplot(data = corruption_gdp, aes(x = Corruption_Index, y = GDP_capita)) +
+  geom_point() +
+  geom_smooth(method = 'lm', color = 'red') +
+  ylim(0, 2210) +
+  labs(title = "Corruption Index vs. GDP per Capita in 2008",
+       x = "Corruption Index", 
+       y = "GDP per Capita")
+ 
+# to vaidate my earlier observation, a correlation test is run
+cor.test(corruption_gdp$Corruption_Index, corruption_gdp$GDP_capita, method = 'pearson')
+
+# The correlation value came up to 0.85.
