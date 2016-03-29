@@ -1,0 +1,278 @@
+library(ggplot2) 
+library(dplyr)
+
+data(diamonds) #loads the diamonds data set since it comes with the ggplot package
+
+summary(diamonds)
+
+# Load the diamonds data set in R studio. How many obs are in the data set?
+## ans: 53940
+
+# How many variables are in the data set?
+## ans: 10
+
+# How many ordered factors are in the data set?
+
+str(diamonds)
+## ans: there are 3 ordered factors in this data
+
+# Which letter represents the best color for a diamond?
+
+?diamonds
+diamonds$color
+## answer = D
+
+
+
+##  Create a histogram of the price of all the diamonds in the diamond data set.
+qplot(x = price, data= diamonds)
+
+
+
+##  Describe the shape and center of the price distribution. Include summary statistics
+##  like the mean and median
+
+summary(diamonds$price)
+# ans: The shape of the histogram is a long tailed histogram. The mean value is 3933 & median value is 2401.
+
+## how many diamonds cost less than $ 500 ?
+
+count(diamonds,price < 500)
+# ans is 1729.
+
+## how many diamonds cost less than $ 250 ?
+
+count(diamonds,price < 250)
+# ans is 0.
+
+# how many diamonds cost $ 15,000 or more ?
+
+count(diamonds,price >= 15000)
+# ans is 1656.
+
+
+
+
+##  Explore the largest peak in the price histogram you created earlier. 
+##  Try limiting the x-axis, altering the bin width,
+
+qplot(x = price, data = diamonds, binwidth = 100) +
+  scale_x_continuous(limits = c(0, 1500),breaks = seq(0, 1500, 200))
+
+
+
+
+## Break out the histogram of diamond prices by cut. You should have five histograms in separate
+## panels on your resulting plot.
+
+
+qplot(x = price, data = diamonds, binwidth = 100) +
+  scale_x_continuous(limits = c(0, 5000),breaks = seq(0, 5000, 250))+
+  facet_wrap(~cut, ncol=5)
+
+
+
+
+## Which cut has the highest priced diamond?
+#  notes: using by(diamonds$price,diamonds$cut,summary) doesnt work as it rounds to nearest integer.
+
+tapply(diamonds$price, diamonds$cut, max)
+# ans is premium
+
+## Which cut has the lowest priced diamond?
+
+tapply(diamonds$price, diamonds$cut, min)
+# ans is premium & ideal
+
+## which cut has the lowest median price?
+
+tapply(diamonds$price, diamonds$cut, median)
+# ans is ideal.
+
+
+
+
+
+## This means the distributions should be somewhat similar,but the histograms we created don't show that.
+## The 'Fair' and 'Good' diamonds appear to have different distributions compared to the better
+## cut diamonds. They seem somewhat uniform on the left with long tails on the right.
+## Let's look in to this more. Look up the documentation for facet_wrap in R Studio.
+## Then, scroll back up and add a parameter to facet_wrap so that the y-axis in the histograms is not fixed.
+## You want the y-axis to  be different for each histogram.
+
+qplot(x = price, data = diamonds, binwidth = 100) +
+  scale_x_continuous(limits = c(0, 5000),breaks = seq(0, 5000, 250))+
+  facet_wrap(~cut, ncol=5,scales="free_y")
+
+
+
+
+## Create a histogram of price per carat and facet it by cut. You can make adjustments
+## to the code from the previous exercise to get started.
+## Adjust the bin width and transform the scale of the x-axis using log10.
+
+qplot(x = price/carat, data = diamonds) +
+  scale_x_log10()+
+  facet_wrap(~cut)
+
+
+
+
+
+## Investigate the price of diamonds using box plots, numerical summaries, and one of the following categorical
+## variables: cut, clarity, or color. For boxplots, we use y parameter for the continuous data and 
+## the x parameter for the categorical data.
+
+qplot(y=price, x=cut, data=diamonds,fill = color, geom="boxplot")
+
+
+
+
+## What is the price range for the middle 50% of diamonds with color D?
+
+by(diamonds$price,diamonds$color,summary)
+# answer is 911 - 4214
+
+## What is the price range for the middle 50% of diamonds with color J?
+# answer is 1860 - 7695
+
+## What is the IQR for diamonds with the best color?
+# answer is best color is D and the IQR is 3303 
+
+## What is the IQR for diamonds with the worst color?
+# answer is worst color is J and the IQR is 5835 
+
+
+
+
+
+## Investigate the price per carat of diamonds across the different colors of diamonds using boxplots.
+
+qplot(x = color, y=price / carat , data = diamonds, 
+      geom='boxplot') 
+
+# Answer: My observation is that the best color D has the highest price per carat among all the colors.
+
+
+
+
+## Investigate the weight of the diamonds (carat) using a freq polygon. Use diff bin widths
+## to see how freq polygon changes. what carat size has count greater than 2000 ?
+
+qplot(x = carat, data = diamonds,
+      geom ='freqpoly')+
+  coord_cartesian(ylim=c(0,2500)) +
+  scale_x_continuous(limits = c(0, 2),breaks = seq(0, 2, 0.1))
+
+# ans is o.3 & 1.01
+
+
+
+
+## The Gapminder website contains over 500 data sets with information about the world's population. Your task is to download a data set of your choice
+## and create 2-5 plots that make use of the techniques from Lesson 3. You might use a simple histogram, a boxplot split over a categorical variable,
+## or a frequency polygon. The choice is yours! You can find a link to the Gapminder website in the Instructor Notes.
+## Once you've completed your investigation, create a post in the discussions that includes: 1. any questions you answered, your observations, and summary statistics
+## 2. snippets of code that created the plots , 3. links to the images of your plots
+
+library(tidyr)
+library(plyr)
+
+# check.names=F to not allow spaces in the column names
+cellphone_raw <-read.csv('cellphonetotal.csv', header = T, sep = ",", check.names = F)
+
+head(cellphone_raw)
+
+#renaming 1st column
+colnames(cellphone_raw)[1]<-"Country"
+
+# reshaping data using gather columns into rows
+cellphone<-gather(cellphone_raw, "Year", "Subsc", 2:48, na.rm = T)
+
+# subset the data to include the top 6 highest GDP in South East Asia and from the start of the year 2000
+cellphone_clean <- cellphone %>%
+  filter(Country %in% c("Indonesia", "Thailand", "Malaysia", "Singapore","Philippines","Vietnam") &
+           Year > 1999)
+
+# 1st graph:  plotting year vs subsc graph
+
+qplot(x = Year, y= Subsc, data = cellphone_clean) 
+
+# My observation from the graph is that there is growth of cellphone ownership over the years.
+
+
+
+# 2nd graph:  plotting Year vs Subsc with lines represented by each country
+
+qplot(x = Year, y = Subsc, data = cellphone_clean, group = Country, color = Country) +
+  geom_line() 
+
+# My observation from the 1st graph is that we can see that Indonesia has experienced a great increase of 
+# cellphone ownership compared to Vietname which came in closest 2nd. Some reasons which I can assume is because
+# these two coutries has the top 3 largest population in South East Asian. 
+
+
+
+
+
+## Your task is to investigate the distribution of your friends' birth months and days.
+## You will need to do some data munging and additional research to complete this task. This task won't be easy, and you may encounter some
+## unexpected challenges along the way. We hope you learn a lot from it though.
+## You can expect to spend 30 min or more on this task depending if you use the provided data or obtain your personal data. We also encourage you
+## to use the lubridate package for working with dates. Read over the documentation in RStudio and search for examples online if you need help.
+
+## You'll need to export your Facebooks friends' birthdays to a csv file. You may need to create a calendar of your Facebook friends’ birthdays 
+## in a program like Outlook or Gmail and then export the calendar as a csv file.
+## Once you load the data into R Studio, you can use the strptime() function to extract the birth months and birth days. We recommend looking up the
+## documentation for the function and finding examples online.
+
+## We've included some links in the Instructor Notes to help get you started. Once you've completed your investigation, create a post in the discussions that includes:
+## 1. any questions you answered, your observations, and summary statistics, 2. snippets of code that created the plots
+## 3. links to the images of your plots
+
+library(ggplot2)
+library(scales)
+library(lubridate)
+library(dplyr)
+
+birthdayraw<- read.csv('birthdaysExample.csv', header = T) 
+
+head(birthdayraw)
+
+str(birthdayraw)
+
+# the code below gives freq of of birthday dates in a table format
+as.data.frame(table(birthdayraw$dates))
+
+# changing the dates the structure R identifies and save to new variable using lubridate package
+tempDates <- mdy(birthdayraw$dates)
+
+# add new columns which extract the individual details of the time syntax
+birthdayclean <- birthdayraw %>%
+  mutate(Year = year(tempDates),
+         Month = month(tempDates, label=TRUE, abbr=FALSE),
+         Day = day(tempDates),
+         Weekday = wday(tempDates,label = TRUE))
+
+head(birthdayclean)
+
+## Which month contains the most number of birthdays?
+
+as.data.frame(table(birthdayclean$Month))
+# answer  is March
+
+## How many birthdays are in each month?
+
+as.data.frame(table(birthdayclean$Month))
+
+## Which day of the year has the most number of birthdays?
+
+count(birthdayclean, Weekday) %>% arrange(desc(n))
+# answer is Sunday.
+
+
+## Do you have at least 365 friends that have birthdays on everyday of the year?
+
+count(distinct(birthdayclean, dates))
+# The answer is we have 348 birthdays on everyday of the year. Hence, we do not have 365 friends that have
+# birthdays on everyday of the year.
