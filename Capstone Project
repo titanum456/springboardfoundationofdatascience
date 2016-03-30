@@ -1,0 +1,40 @@
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(plyr)
+
+# Inputing data into R and naming data as old_data
+old_data <- read.csv('Plan_Crosswalk_2014_2015.csv', stringsAsFactors=FALSE)
+
+# retrieving column names from old_data
+names(old_data)
+
+head(old_data)
+
+# code run to show no. of dental plans only in the dataset
+table(old_data$DentalPlan)
+
+# Since we will conduct study on QHP plans only, we will eliminate dental plans from the dataset
+old_data <- subset(old_data,DentalPlan != 'Y')
+
+#Using library tidyr, we unite columns "Plan_Id2014 & FIPSCODE" into a column "ID"  which will be a reference ID
+old_data <- old_data %>% unite("ID",PlanID_2014,FIPSCode, sep = "-")
+
+
+# Here, we are plotting level of insurance coverage for 2014
+ggplot(aes(x=MetalLevel_2014),data = old_data) + geom_bar()
+ggsave(filename = "MetalLevel2014.jpg")
+
+# Here, we are plotting level of insurance coverage for 2015
+ggplot(aes(x=MetalLevel_2015),data = old_data) + geom_bar()
+ggsave(filename = "MetalLevel2015.jpg")
+
+# Here, we are plotting reasons for crosswalk for plans that included crosswalk
+ggplot(aes(x=ReasonForCrosswalk),data = subset(old_data,CrosswalkLevel != 0)) + geom_bar()
+ggsave(filename = "reasonforcrosswalk.jpg")
+
+
+# Plotting difference of metal level for 2014 & 2015. 1 means the same metal level. 2 means diff metal level.
+old_data$diffmetal_level <- ifelse(old_data$MetalLevel_2014 == old_data$MetalLevel_2015,1,0)
+
+table(old_data$diffmetal_level)
