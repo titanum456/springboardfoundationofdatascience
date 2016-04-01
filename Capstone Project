@@ -3,6 +3,10 @@ library(dplyr)
 library(tidyr)
 library(plyr)
 
+library(foreign)
+library(nnet)
+library(reshape2)
+
 # Inputing data into R and naming data as old_data
 old_data <- read.csv('Plan_Crosswalk_2014_2015.csv', stringsAsFactors=FALSE)
 
@@ -38,3 +42,92 @@ ggsave(filename = "reasonforcrosswalk.jpg")
 old_data$diffmetal_level <- ifelse(old_data$MetalLevel_2014 == old_data$MetalLevel_2015,1,0)
 
 table(old_data$diffmetal_level)
+
+names(old_data)
+
+# Check if crosswalk level is same as reasons for crosswalk level
+old_data$diff_crosswalk <- ifelse(old_data$CrosswalkLevel == old_data$ReasonForCrosswalk ,1,0)
+
+table(old_data$diff_crosswalk)
+
+
+######################################
+####  Prediction Modelling No.1
+
+## The predictor variables are MultistatePaln_2014, MetalLevel_2014 & CrosswalkLevel
+
+## Below we are getting some descriptive statistics in relationship with the dependant variable, ReasonForCrosswalk
+
+with(old_data, table(MultistatePlan_2014, ReasonForCrosswalk))
+
+with(old_data, table(MetalLevel_2014, ReasonForCrosswalk))
+
+with(old_data, table(CrosswalkLevel, ReasonForCrosswalk))
+
+
+## Here, we convert the values for ReasonoForCrosswalk to factors
+
+old_data$Factors_RFC <- as.factor(old_data$ReasonForCrosswalk)
+
+str(old_data)
+
+
+## Using value of 0 which is (Renewing the same product/plan combination using the same 2014 Plan ID) as base reference for the multinomial logistic model
+old_data$RFC2 <- relevel(old_data$Factors_RFC, ref = '0')
+
+test <- multinom(RFC2 ~ MultistatePlan_2014 + MetalLevel_2014 + CrosswalkLevel, data = old_data)
+
+## After 100 iterations, our error are 59,910
+
+summary(test)
+
+## running prediction on our data using the 'test' model
+predict(test,old_data,type ='prob')
+
+
+## Here, we show the misclassification error
+cm <- table(predict(test),old_data$Factors_RFC)
+cm
+
+## Below, we calculate the accuracy of the 'test' model :
+
+1 - sum(diag(cm))/sum(cm)
+
+## the output is 0.183 which means there is (1-18.3)% = 81.7 % accuracy
+
+## 2 tailed z test
+z <- summary(test)$coefficients/summary(test)$standard.errors
+p <- (1 - pnorm(abs(z),0,1))*2
+p
+
+
+
+######################################
+####  Prediction Modelling No.2
+
+## we remove MultistatePlan_2014
+
+test2 <- multinom(RFC2 ~ MetalLevel_2014 + CrosswalkLevel, data = old_data)
+
+# after doing 10 iterations, our error is 60,050
+summary(test2)
+
+## running prediction on our data using the 'test2' model
+predict(test2,old_data,type ='prob')
+
+## Here, we show the misclassification error
+cm2 <- table(predict(test2),old_data$Factors_RFC)
+cm2
+
+## Below, we calculate the accuracy of the 'test2' model :
+
+1 - sum(diag(cm2))/sum(cm2)
+
+## the output is 0.183 which means there is (1-18.3)% = 81.7 % accuracy
+
+## 2 tailed z test
+z <- summary(test2)$coefficients/summary(test2)$standard.errors
+p <- (1 - pnorm(abs(z),0,1))*2
+p
+
+
