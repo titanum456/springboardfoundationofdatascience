@@ -6,6 +6,7 @@ library(plyr)
 library(foreign)
 library(nnet)
 library(reshape2)
+library(gridExtra)
 
 # Inputing data into R and naming data as old_data
 old_data <- read.csv('Plan_Crosswalk_2014_2015.csv', stringsAsFactors=FALSE)
@@ -25,20 +26,22 @@ old_data <- subset(old_data,DentalPlan != 'Y')
 old_data <- old_data %>% unite("ID",PlanID_2014,FIPSCode, sep = "-")
 
 
+library(gridExtra)
+
+
 # Here, we are plotting level of insurance coverage for 2014
-ggplot(aes(x=MetalLevel_2014),data = old_data) + geom_bar()
-ggsave(filename = "MetalLevel2014.jpg")
+p1 <-ggplot(aes(x=MetalLevel_2014),data = old_data) + geom_bar()
 
 # Here, we are plotting level of insurance coverage for 2015
-ggplot(aes(x=MetalLevel_2015),data = old_data) + geom_bar()
-ggsave(filename = "MetalLevel2015.jpg")
+p2 <- ggplot(aes(x=MetalLevel_2015),data = old_data) + geom_bar()
 
-# Here, we are plotting reasons for crosswalk for plans that included crosswalk
-ggplot(aes(x=ReasonForCrosswalk),data = subset(old_data,CrosswalkLevel != 0)) + geom_bar()
-ggsave(filename = "reasonforcrosswalk.jpg")
+grid.arrange(p1,p2)
+ggsave(filename = "MetalLevel2014_2015.jpg")
 
 
-# Plotting difference of metal level for 2014 & 2015. 1 means the same metal level. 2 means diff metal level.
+# Plotting difference of metal level for 2014 & 2015. 1 means the same metal level.
+# 0 means diff metal level.
+
 old_data$diffmetal_level <- ifelse(old_data$MetalLevel_2014 == old_data$MetalLevel_2015,1,0)
 
 table(old_data$diffmetal_level)
@@ -50,13 +53,19 @@ old_data$diff_crosswalk <- ifelse(old_data$CrosswalkLevel == old_data$ReasonForC
 
 table(old_data$diff_crosswalk)
 
+# Here, we are plotting reasons for crosswalk for plans that included crosswalk
+ggplot(aes(x=ReasonForCrosswalk),data = subset(old_data,CrosswalkLevel != 0)) + geom_bar()
+ggsave(filename = "reasonforcrosswalk.jpg")
+
+
 
 ######################################
 ####  Prediction Modelling No.1
 
 ## The predictor variables are MultistatePaln_2014, MetalLevel_2014 & CrosswalkLevel
 
-## Below we are getting some descriptive statistics in relationship with the dependant variable, ReasonForCrosswalk
+## Below we are getting some descriptive statistics in relationship with the dependant variable, 
+# ReasonForCrosswalk
 
 with(old_data, table(MultistatePlan_2014, ReasonForCrosswalk))
 
@@ -72,18 +81,17 @@ old_data$Factors_RFC <- as.factor(old_data$ReasonForCrosswalk)
 str(old_data)
 
 
-## Using value of 0 which is (Renewing the same product/plan combination using the same 2014 Plan ID) as base reference for the multinomial logistic model
+## Using value of 0 which is (Renewing the same product/plan combination using the same 2014 Plan ID) 
+## as base reference for the multinomial logistic model
 old_data$RFC2 <- relevel(old_data$Factors_RFC, ref = '0')
 
 test <- multinom(RFC2 ~ MultistatePlan_2014 + MetalLevel_2014 + CrosswalkLevel, data = old_data)
 
 ## After 100 iterations, our error are 59,910
-
 summary(test)
 
 ## running prediction on our data using the 'test' model
 predict(test,old_data,type ='prob')
-
 
 ## Here, we show the misclassification error
 cm <- table(predict(test),old_data$Factors_RFC)
@@ -129,5 +137,4 @@ cm2
 z <- summary(test2)$coefficients/summary(test2)$standard.errors
 p <- (1 - pnorm(abs(z),0,1))*2
 p
-
 
